@@ -160,15 +160,61 @@ function genMap (limit, radius, roomConfig, increment) {
     points.push([rectList[j].anchor.x, rectList[j].anchor.y]);
   }
   var delaunay = Delaunator.from(points).triangles;
-  
+  // MST
+  (() => {
+    class Edge {
+      constructor () {
+        this.w = 1000000000;
+        this.to = -1;
+      }
+    }
+    function dist (a, b) {
+      return Math.sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]));
+    }
+    var adj = [...Array(roomConfig.count)].map(e => Array(roomConfig.count).fill(1000000000));
+    for (let i = 0; i < delaunay.length; i += 3) {
+      let a = delaunay[i];
+      let b = delaunay[i + 1];
+      let c = delaunay[i + 2];
+      adj[a][b] = dist(points[a], points[b]);
+      adj[a][c] = dist(points[a], points[c]);
+      adj[b][a] = dist(points[b], points[a]);
+      adj[b][c] = dist(points[b], points[c]);
+      adj[c][a] = dist(points[c], points[a]);
+      adj[c][b] = dist(points[c], points[b]);
+    }
+    var selected = Array(roomConfig.count).fill(false);
+    var min_e = [];
+    for (let i = 0; i < roomConfig.count; i++) {
+      min_e.push(new Edge());
+    }
+    min_e[0].w = 0;
+    for (let i = 0; i < roomConfig.count; i++) {
+      let v = -1;
+      for (let j = 0; j < roomConfig.count; j++) {
+        if (!selected[j] && v === -1) {
+          v = j;
+          continue;
+        }
+        if (!selected[j] && min_e[j].w < min_e[v].w) {
+          v = j;
+        }
+      }
+      if (min_e[v].w === 1000000000) {
+        throw Error('There is no MST');
+      }
+      selected[v] = true;
+      if (min_e[v].to !== -1) {
+        console.log(v + ' ' + min_e[v].to);
+      }
+      for (let to = 0; to < roomConfig.count; to++) {
+        if (adj[v][to] < min_e[to].w) {
+          min_e[to].w = adj[v][to];
+          min_e[to].to = v;
+        }
+      }
+    }
+  })();
   return iterList;
 }
-var li = genMap(50, 100, roomConfig, 10);
-/*
-var c = document.getElementById('ctx');
-var ctx = c.getContext('2d');
-console.log(li);
-for (let it in li) {
-  ctx.fillRect(li[it].anchor.x, li[it].anchor.y, li[it].width, li[it].height);
-}
-*/
+module.exports = genMap;
