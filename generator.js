@@ -3,9 +3,9 @@
 const dim = 30;
 // Room configuration (grid units)
 const roomConfig = {
-  minWidth: 30,
-  minHeight: 30,
-  variation: 50,
+  minWidth: 3,
+  minHeight: 3,
+  variation: 20,
   expansion: 10
 };
 class Point {
@@ -131,6 +131,27 @@ function genMap (limit, radius, roomConfig, increment) {
     // console.log(iterList);
     iterList[iterList.length - 1] = top;
   }
+  var lx = 0;
+  var ly = 0;
+  for (let it in iterList) {
+    if (iterList[it].anchor.x < lx) {
+      lx = iterList[it].anchor.x;
+    }
+    if (iterList[it].anchor.y < ly) {
+      ly = iterList[it].anchor.y;
+    }
+  }
+  for (let it in iterList) {
+    iterList[it].anchor.x -= lx;
+    iterList[it].anchor.y -= ly;
+  }
+  return iterList;
 }
 
-genMap(50, 100, roomConfig, 10);
+var li = genMap(200, 100, roomConfig, 10);
+var c = document.getElementById('ctx');
+var ctx = c.getContext('2d');
+console.log(li);
+for (let it in li) {
+  ctx.fillRect(li[it].anchor.x, li[it].anchor.y, li[it].width, li[it].height);
+}
