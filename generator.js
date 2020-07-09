@@ -13,6 +13,14 @@ class Point {
     this.x = x;
     this.y = y;
   }
+
+  normalize () {
+    let dist = Math.sqrt(this.x * this.x + this.y * this.y);
+    if (dist === 0) {
+      return new Point(0, 0);
+    }
+    return new Point(this.x / dist, this.y / dist);
+  }
 }
 class Rectangle {
   constructor (anchor, width, height) {
@@ -46,7 +54,7 @@ function circlePoint (radius) {
   // non-negative coordinates
   return new Point(radius * r * Math.cos(t) + radius, radius * r * Math.sin(t) + radius);
 }
-function genMap (limit, radius, roomConfig) {
+function genMap (limit, radius, roomConfig, increment) {
   // Create blank map where 0 means no obstacle
   var map = [...Array(1500)].map(e => Array(1500).fill(0));
   var rectList = [];
@@ -89,10 +97,40 @@ function genMap (limit, radius, roomConfig) {
     // Remove this rectangle
     deg[0][0] = -1;
     for (let x in adj[deg[0][1]]) {
-      if (deg[adj[deg[0][1]][x]][0] == -1) {
+      if (deg[adj[deg[0][1]][x]][0] === -1) {
         continue;
       }
       deg[adj[deg[0][1]][x]][0]--;
     }
   }
+  var iterList = [];
+  while (stack.length !== 0) {
+    let top = rectList[stack.shift()];
+    iterList.push(top);
+    let centroid = new Point(0, 0);
+    for (let it in iterList) {
+      centroid.x += (iterList[it].anchor.x + iterList[it].width / 2) / iterList.length;
+      centroid.y += (iterList[it].anchor.y + iterList[it].height / 2) / iterList.length;
+    }
+    let dir = new Point(top.anchor.x + top.width / 2 - centroid.x, top.anchor.y + top.height / 2 - centroid.y);
+    dir = dir.normalize();
+    while (true) {
+      top.anchor.x += dir.x * increment;
+      top.anchor.y += dir.y * increment;
+      let bc = true;
+      for (let it = 0; it < iterList.length - 1; it++) {
+        if (top.intersect(iterList[it])) {
+          bc = false;
+          break;
+        }
+      }
+      if (bc) {
+        break;
+      }
+    }
+    // console.log(iterList);
+    iterList[iterList.length - 1] = top;
+  }
 }
+
+genMap(50, 100, roomConfig, 10);
