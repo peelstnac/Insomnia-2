@@ -1,4 +1,5 @@
 'use strict';
+const Delaunator = require('delaunator');
 // Dimension of each grid square
 const dim = 30;
 // Room configuration (grid units)
@@ -6,7 +7,8 @@ const roomConfig = {
   minWidth: 3,
   minHeight: 3,
   variation: 20,
-  expansion: 10
+  expansion: 10,
+  count: 20
 };
 class Point {
   constructor (x, y) {
@@ -55,6 +57,10 @@ function circlePoint (radius) {
   return new Point(radius * r * Math.cos(t) + radius, radius * r * Math.sin(t) + radius);
 }
 function genMap (limit, radius, roomConfig, increment) {
+  if (limit < roomConfig.count) {
+    throw Error('Limit < roomConfig.count');
+    return;
+  }
   // Create blank map where 0 means no obstacle
   var map = [...Array(1500)].map(e => Array(1500).fill(0));
   var rectList = [];
@@ -145,13 +151,24 @@ function genMap (limit, radius, roomConfig, increment) {
     iterList[it].anchor.x -= lx;
     iterList[it].anchor.y -= ly;
   }
+  var area = iterList.map((e, i) => [e.width * e.height, i]);
+  area.sort();
+  area.reverse();
+  var points = [];
+  for (let i = 0; i < roomConfig.count; i++) {
+    let j = area[i][1];
+    points.push([rectList[j].anchor.x, rectList[j].anchor.y]);
+  }
+  var delaunay = Delaunator.from(points).triangles;
+  
   return iterList;
 }
-
-var li = genMap(200, 100, roomConfig, 10);
+var li = genMap(50, 100, roomConfig, 10);
+/*
 var c = document.getElementById('ctx');
 var ctx = c.getContext('2d');
 console.log(li);
 for (let it in li) {
   ctx.fillRect(li[it].anchor.x, li[it].anchor.y, li[it].width, li[it].height);
 }
+*/
