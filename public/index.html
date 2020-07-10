@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-3.0.0.js"></script>
+    </head>
+    <body>
+        <canvas id="ctx" width="1280" height="720" style="border:1px solid #000000;">
+            Your browser does not support the HTML canvas tag.
+        </canvas>
+        <script>
+            var c = document.getElementById('ctx');
+            var ctx = c.getContext('2d');
+            $.get("/gen", (data) => {
+                console.log("data received");
+                console.log(data);
+                for (let i in data[3]) {
+                    let li = data[3];
+                    ctx.fillRect(li[i].anchor.x, li[i].anchor.y, li[i].width, li[i].height);
+                }
+            })
+        </script>
+    </body>
+</html>

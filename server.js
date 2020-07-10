@@ -1,15 +1,31 @@
 'use strict';
 const Delaunator = require('delaunator');
+const ParkMiller = require('park-miller');
+const random = new ParkMiller(10);
 const fs = require('fs');
+const express = require('express');
+const app = express();
+const path = require('path');
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => {
+  res.sendFile('index.html');
+});
+app.get('/gen', (req, res) => {
+  res.send(genMap(40, 100, roomConfig, 10));
+});
+
+app.listen(3000);
+
 // Dimension of each grid square
 const dim = 30;
 // Room configuration (grid units)
 const roomConfig = {
-  minWidth: 800,
-  minHeight: 800,
-  variation: 800,
-  expansion: 100,
-  count: 20
+  minWidth: 50,
+  minHeight: 50,
+  variation: 50,
+  expansion: 0,
+  count: 10
 };
 class Point {
   constructor (x, y) {
@@ -154,6 +170,7 @@ function genMap (limit, radius, roomConfig, increment) {
     iterList[it].anchor.x -= lx;
     iterList[it].anchor.y -= ly;
   }
+  rectList = iterList;
   var area = iterList.map((e, i) => [e.width * e.height, i]);
   area.sort();
   area.reverse();
@@ -235,9 +252,10 @@ function genMap (limit, radius, roomConfig, increment) {
       }
     }
   }
-  return [map, mst, rectList];
+  return [map, mst, area, rectList];
 }
-var ret = genMap(50, 100, roomConfig, 50)[0];
+/*
+var ret = genMap(150, 100, roomConfig, 50)[0];
 var stream = fs.createWriteStream('output.txt');
 console.log(1);
 for (let i = 0; i < 750; i++) {
@@ -247,3 +265,4 @@ for (let i = 0; i < 750; i++) {
   }
   stream.write('\n');
 }
+*/
