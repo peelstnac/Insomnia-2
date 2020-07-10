@@ -1,13 +1,14 @@
 'use strict';
 const Delaunator = require('delaunator');
+const fs = require('fs');
 // Dimension of each grid square
 const dim = 30;
 // Room configuration (grid units)
 const roomConfig = {
-  minWidth: 3,
-  minHeight: 3,
-  variation: 20,
-  expansion: 10,
+  minWidth: 800,
+  minHeight: 800,
+  variation: 800,
+  expansion: 100,
   count: 20
 };
 class Point {
@@ -29,6 +30,8 @@ class Rectangle {
     this.anchor = anchor;
     this.width = width;
     this.height = height;
+    // Newly added property, older calculations preserved
+    this.center = new Point(this.anchor.x + this.width / 2, this.anchor.y + this.height / 2);
   }
 
   intersect (rect) {
@@ -59,9 +62,9 @@ function circlePoint (radius) {
 function genMap (limit, radius, roomConfig, increment) {
   if (limit < roomConfig.count) {
     throw Error('Limit < roomConfig.count');
-    return;
   }
   // Create blank map where 0 means no obstacle
+  // TODO: make sure no out of bounds
   var map = [...Array(1500)].map(e => Array(1500).fill(0));
   var rectList = [];
   // Spam a bunch of rectangles
@@ -161,6 +164,7 @@ function genMap (limit, radius, roomConfig, increment) {
   }
   var delaunay = Delaunator.from(points).triangles;
   // MST
+  var mst = [...Array(roomConfig.count)].map(e => []);
   (() => {
     class Edge {
       constructor () {
@@ -205,7 +209,8 @@ function genMap (limit, radius, roomConfig, increment) {
       }
       selected[v] = true;
       if (min_e[v].to !== -1) {
-        console.log(v + ' ' + min_e[v].to);
+        mst[v].push(min_e[v].to);
+        mst[min_e[v].to].push(v);
       }
       for (let to = 0; to < roomConfig.count; to++) {
         if (adj[v][to] < min_e[to].w) {
@@ -215,6 +220,30 @@ function genMap (limit, radius, roomConfig, increment) {
       }
     }
   })();
-  return iterList;
+  // Project onto map
+  for (let i = 0; i < roomConfig.count; i++) {
+    let rect = rectList[area[i][1]];
+    let tl = new Point(rect.anchor.x, rect.anchor.y);
+    let br = new Point(tl.x + rect.width, tl.y + rect.height);
+    tl.x = Math.ceil(tl.x / dim);
+    tl.y = Math.ceil(tl.y / dim);
+    br.x = Math.floor(br.x / dim);
+    br.y = Math.floor(br.y / dim);
+    for (let j = tl.x; j <= br.x; j++) {
+      for (let k = tl.y; k <= br.y; k++) {
+        map[j][k] = 1;
+      }
+    }
+  }
+  return [map, mst, rectList];
 }
-module.exports = genMap;
+var ret = genMap(50, 100, roomConfig, 50)[0];
+var stream = fs.createWriteStream('output.txt');
+console.log(1);
+for (let i = 0; i < 750; i++) {
+  for (let j = 0; j < 750; j++) {
+    //console.log(i + ' ' + j);
+    stream.write(ret[i][j].toString());
+  }
+  stream.write('\n');
+}
