@@ -275,7 +275,7 @@ function genMap (limit, radius, roomConfig, increment) {
   // Make the hallways
   // Make all the rectangles into blocks
   var unusedBlocks = [];
-  var added = Array(rectList.length).fill(0);
+  var added = Array(rectList.length).fill(false);
   for (let i in rectList) {
     let temp = rectList[i];
     let tl = new Point(Math.ceil(temp.anchor.x / dim), Math.ceil(temp.anchor.y / dim));
@@ -285,25 +285,48 @@ function genMap (limit, radius, roomConfig, increment) {
   // Add the best blocks to the map
   for (let i = 0; i < roomConfig.count; i++) {
     map.addBlock(unusedBlocks[area[i][1]]);
-    added[area[i][1]] = 1;
+    added[area[i][1]] = true;
+  }
+  function getSign (x) {
+    if (x < 0) return -1;
+    if (x > 0) return 1;
+    return 0;
+  }
+  function blockOverlap (b1, b2) {
+    if (b1.tl.x >= b2.br.x || b2.tl.x >= b1.br.x) {
+      return false;
+    }
+    if (b1.tl.y <= b2.br.y || b2.tl.y <= b1.br.y) {
+      return false;
+    }
+    return true;
   }
   // Use the MST
   for (let i = 0; i < roomConfig.count; i++) {
     let edges = mst[i];
     let b1 = unusedBlocks[i];
     for (let j in edges) {
-      let b2 = unusedBlocks[area[j][1]];
+      let b2 = unusedBlocks[area[edges[j]][1]];
       // Horizontal line
-      if (Math.abs(b1.center.y - b2.center.y) + 1 <= 3) {
+      if (getSign(b1.tl.y - b2.br.y) + getSign(b1.br.y - b2.tl.y) === 0 &&
+      Math.min(Math.abs(b1.tl.y - b2.br.y), Math.abs(b1.br.y - b2.tl.y)) + 1 >= 3) {
+        // Need to replace center element with correct variables
         let tl = new Point(Math.min(b1.br.x, b2.br.y) + 1, Math.floor((b1.center.y + b2.center.y) / 2) + 1);
         let br = new Point(Math.max(b1.tl.x, b2.tl.x) - 1, Math.floor((b1.center.y + b2.center.y) / 2) - 1);
         let path = new Block(tl, br);
         map.addBlock(path);
         // Check intersection of path with other unused blocks
-        
+        for (let k in unusedBlocks) {
+          if (added[k]) continue;
+          if (blockOverlap(unusedBlocks[k], path)) {
+            added[k] = true;
+            map.addBlock(unusedBlocks[k]);
+          }
+        }
       }
+      // Vertical line
     }
   }
 }
 
-genMap(100, 100, roomConfig, 10);
+genMap(20, 100, roomConfig, 10);
