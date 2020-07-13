@@ -4,7 +4,7 @@
         <script src="https://code.jquery.com/jquery-3.0.0.js"></script>
     </head>
     <body>
-        <canvas id="ctx" width="1280" height="720" style="border:1px solid #000000;">
+        <canvas id="ctx" width="5000" height="5000" style="border:1px solid #000000;">
             Your browser does not support the HTML canvas tag.
         </canvas>
         <script>
@@ -13,9 +13,16 @@
             $.get("/gen", (data) => {
                 console.log("data received");
                 console.log(data);
-                for (let i in data[3]) {
-                    let li = data[3];
-                    ctx.fillRect(li[i].anchor.x, li[i].anchor.y, li[i].width, li[i].height);
+                let area = data[2];
+                let rectList = data[3];
+                for (let i in rectList) {
+                    let rect = rectList[i];
+                    ctx.fillRect(rect.anchor.x, rect.anchor.y, rect.width, rect.height);
+                }
+                for (let i = 0; i < 10; i++) {
+                    let rect = rectList[area[i][1]];
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(rect.anchor.x, rect.anchor.y, rect.width, rect.height);
                 }
             })
         </script>

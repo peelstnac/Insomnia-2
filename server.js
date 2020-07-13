@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
   res.sendFile('index.html');
 });
 app.get('/gen', (req, res) => {
-  res.send(genMap(40, 100, roomConfig, 10));
+  res.send(genMap(40, 80, roomConfig, 10));
 });
 
 app.listen(3000);
@@ -62,10 +62,34 @@ class Rectangle {
     }
   }
 }
+// Block data structure
+class Block {
+  constructor (tl, br) {
+    this.tl = tl;
+    this.br = br;
+  }
+}
+// Tile map data structure
+class Map {
+  constructor (width, height) {
+    this.width = width;
+    this.height = height;
+    this.arr = Array(this.width * this.height).fill(0);
+    this.blockList = [];
+  }
+
+  at (x, y) {
+    return this.map[x + y * this.width];
+  }
+
+  update (x, y, value) {
+    this.map[x + y * this.width] = value;
+  }
+}
 // Generate random point in a circle as described by [1]
 function circlePoint (radius) {
-  let t = 2 * Math.PI * Math.random();
-  let u = Math.random() + Math.random();
+  let t = 2 * Math.PI * (random.integerInRange(0, 100) / 100);
+  let u = (random.integerInRange(0, 100) / 100) + (random.integerInRange(0, 100) / 100);
   let r = null;
   if (u > 1) {
     r = 2 - u;
@@ -81,13 +105,13 @@ function genMap (limit, radius, roomConfig, increment) {
   }
   // Create blank map where 0 means no obstacle
   // TODO: make sure no out of bounds
-  var map = [...Array(1500)].map(e => Array(1500).fill(0));
+  var map = new Map(150, 150);
   var rectList = [];
   // Spam a bunch of rectangles
   for (let i = 0; i < limit; i++) {
     let point = circlePoint(radius);
-    let width = roomConfig.minWidth + roomConfig.variation * Math.random() + roomConfig.expansion;
-    let height = roomConfig.minHeight + roomConfig.variation * Math.random() + roomConfig.expansion;
+    let width = roomConfig.minWidth + roomConfig.variation * (random.integerInRange(0, 100) / 100) + roomConfig.expansion;
+    let height = roomConfig.minHeight + roomConfig.variation * (random.integerInRange(0, 100) / 100) + roomConfig.expansion;
     rectList.push(new Rectangle(point, width, height));
   }
   // Follow instructions of [2]
@@ -237,32 +261,6 @@ function genMap (limit, radius, roomConfig, increment) {
       }
     }
   })();
-  // Project onto map
-  for (let i = 0; i < roomConfig.count; i++) {
-    let rect = rectList[area[i][1]];
-    let tl = new Point(rect.anchor.x, rect.anchor.y);
-    let br = new Point(tl.x + rect.width, tl.y + rect.height);
-    tl.x = Math.ceil(tl.x / dim);
-    tl.y = Math.ceil(tl.y / dim);
-    br.x = Math.floor(br.x / dim);
-    br.y = Math.floor(br.y / dim);
-    for (let j = tl.x; j <= br.x; j++) {
-      for (let k = tl.y; k <= br.y; k++) {
-        map[j][k] = 1;
-      }
-    }
-  }
-  return [map, mst, area, rectList];
+  // Make the hallways
+
 }
-/*
-var ret = genMap(150, 100, roomConfig, 50)[0];
-var stream = fs.createWriteStream('output.txt');
-console.log(1);
-for (let i = 0; i < 750; i++) {
-  for (let j = 0; j < 750; j++) {
-    //console.log(i + ' ' + j);
-    stream.write(ret[i][j].toString());
-  }
-  stream.write('\n');
-}
-*/
