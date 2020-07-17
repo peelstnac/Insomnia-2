@@ -310,21 +310,47 @@ function genMap (limit, radius, roomConfig, increment) {
       // Horizontal line
       if (getSign(b1.tl.y - b2.br.y) + getSign(b1.br.y - b2.tl.y) === 0 &&
       Math.min(Math.abs(b1.tl.y - b2.br.y), Math.abs(b1.br.y - b2.tl.y)) + 1 >= 3) {
-        // Need to replace center element with correct variables
-        let tl = new Point(Math.min(b1.br.x, b2.br.y) + 1, Math.floor((b1.center.y + b2.center.y) / 2) + 1);
-        let br = new Point(Math.max(b1.tl.x, b2.tl.x) - 1, Math.floor((b1.center.y + b2.center.y) / 2) - 1);
-        let path = new Block(tl, br);
+        let tl = null;
+        let br = null;
+        let lx = null;
+        let rx = null;
+        let path = null;
+        if (Math.abs(b1.tl.y - b2.br.y) < Math.abs(b1.br.y - b2.tl.y)) {
+          if (b1.br.x < b2.tl.x) {
+            lx = b1.br.x;
+            rx = b2.tl.x;
+          } else {
+            lx = b2.br.x;
+            rx = b1.tl.x;
+          }
+          // Note that there is actually no need to use Math.max and Math.min
+          tl = new Point(lx + 1, Math.max(b1.tl.y, b2.br.y));
+          br = new Point(rx - 1, Math.min(b1.tl.y, b2.br.y));
+          path = new Block(tl, br);
+        } else {
+          if (b1.br.x < b2.tl.x) {
+            lx = b1.br.x;
+            rx = b2.tl.x;
+          } else {
+            lx = b2.br.x;
+            rx = b1.tl.x;
+          }
+          tl = new Point(lx + 1, Math.max(b2.tl.y, b1.br.y));
+          br = new Point(rx - 1, Math.min(b2.tl.y, b1.br.y));
+          path = new Block(tl, br);
+        }
+        // Add the path to the map
         map.addBlock(path);
-        // Check intersection of path with other unused blocks
-        for (let k in unusedBlocks) {
-          if (added[k]) continue;
-          if (blockOverlap(unusedBlocks[k], path)) {
-            added[k] = true;
-            map.addBlock(unusedBlocks[k]);
+        // Check for intersections
+        for (let i in unusedBlocks) {
+          if (added[i]) continue;
+          if (blockOverlap(path, unusedBlocks[i])) {
+            added[i] = true;
+            map.addBlock(unusedBlocks[i]);
           }
         }
       }
-      // Vertical line
+      // Combination of horizontal and vertical
     }
   }
 }
